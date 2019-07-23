@@ -1,6 +1,6 @@
 paper.install(window);
 // Colour values taken from Minecraft: https://minecraft.gamepedia.com/Dye#Item_data
-var colours = {
+const colours = {
   "Ink Sac": "#1D1D21",
   "Red Dye": "#B02E26",
   "Green Dye": "#5E7C16",
@@ -21,6 +21,21 @@ var colours = {
   // "Brown Dye": "#835432",
   // "Blue Dye": "#3C44AA",
   // "White Dye": "#F9FFFE"
+}
+
+/**
+ * Gets a random key from the dictionary of `colours`.
+ *
+ * Makes sure to get a new colour rather than the same old one.
+ */
+function getRandomColourKey(oldKey) {
+  // Taken from StackOverflow: https://stackoverflow.com/questions/2532218/pick-random-property-from-a-javascript-object
+  let keys = Object.keys(colours);
+  let randKey;
+  do {
+    randKey = keys[keys.length * Math.random() << 0];
+  } while (randKey !== oldKey);
+  return randKey;
 }
 
 window.onload = function() {
@@ -44,13 +59,18 @@ window.onload = function() {
         let newLayer = new paper.Layer();
         project.addLayer(newLayer.importJSON(data.layer));
         project.ids.push(data.id);
+
       } else {
         let pathArray = data.layer[1].children;
-        let newPath = pathArray.get[pathArray.length - 1];
-        project.layers[project.ids.indexOf(data.id)][1].importJSON(newPath);
+        if (pathArray.length === 0) {
+          project.layers[project.ids.indexOf(data.id)][1].removeChildren();
+        } else {
+          let newPath = pathArray.get[pathArray.length - 1];
+          project.layers[project.ids.indexOf(data.id)][1].importJSON(newPath);
+        }
       }
     }
-    
+
     // Update the description
     $("#colourDescription").html("");
 
@@ -60,9 +80,7 @@ window.onload = function() {
     // project.ids.push(id);
 
     // Select a colour
-    // Taken from StackOverflow: https://stackoverflow.com/questions/2532218/pick-random-property-from-a-javascript-object
-    let keys = Object.keys(colours);
-    let randKey = keys[keys.length * Math.random() << 0];
+    var randKey = getRandomColourKey(randKey);
     var colour = colours[randKey];
     $("#colourText").css("color", colour).html(randKey);
 
@@ -70,7 +88,7 @@ window.onload = function() {
     var tool = new Tool();
     var path;
 
-    // Define a mouse handlers
+    // Define mouse handlers
     tool.onMouseDown = function(event) {
       path = new Path();
       path.strokeColor = colour;
@@ -84,9 +102,30 @@ window.onload = function() {
 
     tool.onMouseUp = function(event) {
       // After the stroke is completed, log it to the WebSocket
-      // console.log(`To send: {"id": ${id}, "layer": ${JSON.stringify(project.activeLayer)}}`);
       socket.send(`{"id": ${id}, "layer": ${JSON.stringify(project.activeLayer)}}`);
     }
+
+    // Define motion handlers
+    window.addEventListener("devicemotion", (event) => {
+      // Device acceleration along the x-axis, in m/s2
+      if (event.acceleration.x >= 36) {
+        project.activeLayer.removeChildren();
+        tool.onMouseUp();    // TODO: Change this. It looks really weird.
+        alert("Ya moved yer phone");
+      }
+    });
+
+    window.addEventListener("deviceorientation", (event) => {
+      // Device rotation around the z-axis, in degrees
+      if (event.gamma >= 45) {
+        // Select a new colour
+        // TODO: Don't repeat yourself.
+        var randKey = getRandomColourKey(randKey);
+        var colour = colours[randKey];
+        $("#colourText").css("color", colour).html(randKey);
+        alert("Ya rotato potato'd your phone");
+      }
+    });
 
   } else {
     console.error(`Invalid query parameter for 'size': ${size}`);
