@@ -34,7 +34,7 @@ function getRandomColourKey(oldKey) {
   let randKey;
   do {
     randKey = keys[keys.length * Math.random() << 0];
-  } while (randKey !== oldKey);
+  } while (randKey === oldKey);
   return randKey;
 }
 
@@ -55,16 +55,19 @@ window.onload = function() {
     // Figure out what to do when WebSocket information is received
     socket.onmessage = function(message) {
       let data = JSON.parse(message.data);
+      console.log(data);
       if (!(data.id in project.ids)) {
         let newLayer = new paper.Layer();
         project.addLayer(newLayer.importJSON(data.layer));
         project.ids.push(data.id);
 
       } else {
-        let pathArray = data.layer[1].children;
-        if (pathArray.length === 0) {
+        if (data.layer == null) {
+          console.log("Data layer children detected to be NULULULULULULULULULU");
           project.layers[project.ids.indexOf(data.id)][1].removeChildren();
+          
         } else {
+          let pathArray = data.layer[1].children;
           let newPath = pathArray.get[pathArray.length - 1];
           project.layers[project.ids.indexOf(data.id)][1].importJSON(newPath);
         }
@@ -110,8 +113,8 @@ window.onload = function() {
       // Device acceleration along the x-axis, in m/s2
       if (event.acceleration.x >= 36) {
         project.activeLayer.removeChildren();
-        tool.onMouseUp();    // TODO: Change this. It looks really weird.
-        alert("Ya moved yer phone");
+        socket.send(`{"id": ${id}, "layer": ${null}}`);
+        alert(JSON.stringify(project.activeLayer));
       }
     });
 
@@ -120,10 +123,9 @@ window.onload = function() {
       if (event.gamma >= 45) {
         // Select a new colour
         // TODO: Don't repeat yourself.
-        var randKey = getRandomColourKey(randKey);
-        var colour = colours[randKey];
+        randKey = getRandomColourKey(randKey);
+        colour = colours[randKey];
         $("#colourText").css("color", colour).html(randKey);
-        alert("Ya rotato potato'd your phone");
       }
     });
 
